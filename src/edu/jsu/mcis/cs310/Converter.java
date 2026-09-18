@@ -2,6 +2,9 @@ package edu.jsu.mcis.cs310;
 
 import com.github.cliftonlabs.json_simple.*;
 import com.opencsv.*;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.List;
 
 public class Converter {
     
@@ -78,7 +81,45 @@ public class Converter {
         
         try {
         
-            // INSERT YOUR CODE HERE
+          CSVReader reader = new CSVReader(new StringReader(csvString));
+            List<String[]> rows = reader.readAll();
+            reader.close();
+            
+            JsonObject json = new JsonObject();
+            
+            JsonArray prodNums = new JsonArray();
+            JsonArray colHeadings = new JsonArray();
+            JsonArray data = new JsonArray();
+            
+            String[] headings = rows.get(0);
+            
+            for (String heading : headings) {
+                colHeadings.add(heading);
+            }
+            
+            for (int i = 1; i < rows.size(); i++) {
+                
+                String[] row = rows.get(i);
+                
+                prodNums.add(row[0]);
+                
+                JsonArray dataRow = new JsonArray();
+                
+                dataRow.add(row[1]);
+                dataRow.add(Integer.parseInt(row[2]));
+                dataRow.add(Integer.parseInt(row[3]));
+                dataRow.add(row[4]);
+                dataRow.add(row[5]);
+                dataRow.add(row[6]);
+                
+                data.add(dataRow);
+            }
+            
+            json.put("ProdNums", prodNums);
+            json.put("ColHeadings", colHeadings);
+            json.put("Data", data);
+            
+            result = Jsoner.serialize(json);
             
         }
         catch (Exception e) {
@@ -96,7 +137,48 @@ public class Converter {
         
         try {
             
-            // INSERT YOUR CODE HERE
+            JsonObject json = Jsoner.deserialize(jsonString, new JsonObject());
+            
+            JsonArray prodNums = (JsonArray) json.get("ProdNums");
+            JsonArray colHeadings = (JsonArray) json.get("ColHeadings");
+            JsonArray data = (JsonArray) json.get("Data");
+            
+            StringWriter stringWriter = new StringWriter();
+            CSVWriter writer = new CSVWriter(stringWriter);
+            
+            String[] headings = new String[colHeadings.size()];
+            
+            for (int i = 0; i < colHeadings.size(); i++) {
+                headings[i] = colHeadings.get(i).toString();
+            }
+            
+            writer.writeNext(headings);
+            
+            for (int i = 0; i < data.size(); i++) {
+                
+                JsonArray dataRow = (JsonArray) data.get(i);
+                
+                String[] csvRow = new String[7];
+                
+                csvRow[0] = prodNums.get(i).toString();
+                csvRow[1] = dataRow.get(0).toString();
+                
+                Number season = (Number) dataRow.get(1);
+                Number episode = (Number) dataRow.get(2);
+                
+                csvRow[2] = String.valueOf(season.intValue());
+                csvRow[3] = String.format("%02d", episode.intValue());
+                
+                csvRow[4] = dataRow.get(3).toString();
+                csvRow[5] = dataRow.get(4).toString();
+                csvRow[6] = dataRow.get(5).toString();
+                
+                writer.writeNext(csvRow);
+            }
+            
+            writer.close();
+            
+            result = stringWriter.toString();
             
         }
         catch (Exception e) {
